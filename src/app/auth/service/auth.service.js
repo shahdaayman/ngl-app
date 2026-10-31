@@ -50,16 +50,21 @@ export async function register(userData){
         await sendEmail(normalizedEmail, 'verification code', `<h1>Your verification code is: ${otp}</h1>`);
     } catch (error) {
         // Keep the account reserved until this attempt's OTP has been removed.
-        await otpRepository.deleteOTP(normalizedEmail);
+        await otpRepository.deleteOTP(normalizedEmail, 'verification');
         await authRepository.deleteUserById(createdUser._id);
         throw error;
     }
     const result = createdUser.toObject();
     delete result.password;
+    delete result.authVersion;
     return result;
 }
 
 export async function verifyEmail(email,code){
+    if (typeof email !== 'string' || typeof code !== 'string') {
+        throw Object.assign(new Error('Email and verification code are required.'), {status: 400});
+    }
+    email = email.trim().toLowerCase();
     // 1. Check User Existence
     const user = await authRepository.checkUserExistByEmail(email);
     // 1.1 if not exist
@@ -72,16 +77,19 @@ export async function verifyEmail(email,code){
     if(!otp || otp.expiresAt <= new Date()) throw otpExpired;
     // 2.2 OTP stored into DB >> code not equal code stored >> error >> "Invalid OTP"
     if(otp.code !== String(code).trim()) throw invalidCode;
+    const consumedOTP = await otpRepository.consumeOTP(email, String(code).trim(), 'verification');
+    if (!consumedOTP) throw otpExpired;
     // 3. make isVerified = true
-    const updatedUser = await userRepository.updateUserByEmail(email, {isVerified: true});
-    // 4. delete OTP from DB
-    await otpRepository.deleteOTP(email);
+    const updatedUser = await userRepository.updateUserById(user._id, {isVerified: true});
     return updatedUser;
 }
 
 export async function login(email,password) {
     // 1. check user exits
-    const user =  await authRepository.checkUserExistByEmail(email);
+    if (typeof email !== 'string' || typeof password !== 'string') {
+        throw Object.assign(new Error('Email and password are required.'), {status: 400});
+    }
+    const user =  await authRepository.getUserForLogin(email.trim().toLowerCase());
     // 1.1 not exist
     if(!user) throw userNotExist;
     // 1.2 not verified
@@ -90,12 +98,20 @@ export async function login(email,password) {
     const match = await bcrypt.compare(password, user.password);
     if(!match) throw invalidPassword;
     // 3. generate access token
-    const token = jwt.sign({id: user._id, email: user.email, name: user.name },
+    const token = jwt.sign({id: user._id, email: user.email, name: user.name, version: user.authVersion },
         process.env.JWT_SECRET,{expiresIn: toSeconds(1,'hours')});
     return token;
 }
 
+export async function logout(userId) {
+    await authRepository.invalidateTokens(userId);
+}
+
 export async function sendOTP(email){
+    if (typeof email !== 'string') {
+        throw Object.assign(new Error('Email is required.'), {status: 400});
+    }
+    email = email.trim().toLowerCase();
     // 1. Check user exist
     const user = await authRepository.checkUserExistByEmail(email);
     if(!user) throw userNotExist;
@@ -108,4 +124,41 @@ export async function sendOTP(email){
         expiresAt: new Date(Date.now() + toMs(5, 'minutes'))
     });
     await sendEmail(email, 'New OTP', `<h1>Your New OTP is: ${code}</h1>`);
+}
+
+export async function sendPasswordResetOTP(email) {
+    if (typeof email !== 'string') {
+        throw Object.assign(new Error('Email is required.'), {status: 400});
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await authRepository.checkUserExistByEmail(normalizedEmail);
+    if (!user) throw userNotExist;
+    if (!user.isVerified) throw userNotVerified;
+
+    const code = generateOTP();
+    await otpRepository.replaceOTP({
+        email: normalizedEmail,
+        code,
+        purpose: 'password-reset',
+        expiresAt: new Date(Date.now() + toMs(5, 'minutes'))
+    });
+    await sendEmail(normalizedEmail, 'Password reset code', `<h1>Your password reset code is: ${code}</h1>`);
+}
+
+export async function resetPassword(email, code, password) {
+    if (typeof email !== 'string' || typeof code !== 'string'
+        || typeof password !== 'string' || password.length === 0
+        || Buffer.byteLength(password, 'utf8') > 72) {
+        throw Object.assign(new Error('A valid email, code, and password (up to 72 bytes) are required.'), {status: 400});
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await authRepository.checkUserExistByEmail(normalizedEmail);
+    if (!user) throw userNotExist;
+    const otp = await otpRepository.getOtpByEmail(normalizedEmail, 'password-reset');
+    if (!otp || otp.expiresAt <= new Date()) throw otpExpired;
+    if (otp.code !== code.trim()) throw invalidCode;
+
+    const consumedOTP = await otpRepository.consumeOTP(normalizedEmail, code.trim(), 'password-reset');
+    if (!consumedOTP) throw otpExpired;
+    await authRepository.updatePassword(user._id, await bcrypt.hash(password, 10));
 }

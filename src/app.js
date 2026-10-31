@@ -20,7 +20,7 @@ app.use((error, req, res, next) => {
     res.status(status).json({
         success: false,
         message: error.code === 11000
-            ? 'User Already Exist.'
+            ? 'A record with these values already exists.'
             : status >= 500 && !error.status ? 'Internal server error.' : error.message,
     });
 });

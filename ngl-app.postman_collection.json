@@ -2,10 +2,20 @@
   "info": {
     "_postman_id": "4f521bb5-d3f6-423b-9549-f4ed21b17265",
     "name": "ngl-app",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "57081315",
-    "_collection_link": "https://go.postman.co/collection/57081315-4f521bb5-d3f6-423b-9549-f4ed21b17265?source=collection_link"
+    "description": "Core authentication, profile, anonymous messaging, identity requests, and private conversations. Set loginRole to sender or receiver before running Login, then provide both user IDs in collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:3000"},
+    {"key": "loginRole", "value": "sender"},
+    {"key": "senderToken", "value": ""},
+    {"key": "receiverToken", "value": ""},
+    {"key": "senderId", "value": ""},
+    {"key": "receiverId", "value": ""},
+    {"key": "messageId", "value": ""},
+    {"key": "requestId", "value": ""},
+    {"key": "conversationId", "value": ""}
+  ],
   "item": [
     {
       "name": "auth",
@@ -14,158 +24,280 @@
           "name": "register",
           "request": {
             "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"name\": \"shahd\",\r\n  \"email\": \"shahd248795@bue.edu.eg\",\r\n  \"password\": \"123456\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:3000/auth/register",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "auth",
-                "register"
-              ]
-            }
-          },
-          "response": []
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Sender\",\n  \"email\": \"sender@example.com\",\n  \"password\": \"ReplaceWithAStrongPassword\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/register"
+          }
         },
         {
-          "name": "verify-account",
+          "name": "send verification OTP",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"sender@example.com\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/send-otp"
+          }
+        },
+        {
+          "name": "verify account",
           "request": {
             "method": "PATCH",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"shahd248795@bue.edu.eg\",\r\n    \"code\": \"944663\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:3000/auth/verify-account",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "auth",
-                "verify-account"
-              ]
-            }
-          },
-          "response": []
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"sender@example.com\",\n  \"code\": \"000000\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/verify-account"
+          }
         },
         {
-          "name": "send OTP",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "  {\r\n    \"email\": \"shahd248795@bue.edu.eg\"\r\n  }",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:3000/auth/send-otp",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "auth",
-                "send-otp"
+          "name": "login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.data && body.data.token) {",
+                "  const role = pm.collectionVariables.get('loginRole') === 'receiver' ? 'receiverToken' : 'senderToken';",
+                "  pm.collectionVariables.set(role, body.data.token);",
+                "}"
               ]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "forget password",
+          }],
           "request": {
             "method": "POST",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"sender@example.com\",\n  \"password\": \"ReplaceWithAStrongPassword\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "send password reset OTP",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"sender@example.com\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/password-reset/send-otp"
+          }
         },
         {
           "name": "reset password",
           "request": {
             "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3000/auth/",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "auth",
-                ""
-              ]
-            }
-          },
-          "response": []
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"sender@example.com\",\n  \"code\": \"000000\",\n  \"password\": \"NewStrongPassword\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/auth/password-reset"
+          }
         },
         {
-          "name": "login",
+          "name": "logout",
           "request": {
             "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"email\": \"shahd248795@bue.edu.eg\",\r\n  \"password\": \"123456\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:3000/auth/login",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "3000",
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
-          },
-          "response": []
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/auth/logout"
+          }
         }
       ]
     },
     {
-      "name": "message",
-      "item": []
+      "name": "user",
+      "item": [
+        {
+          "name": "my profile",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/user/me"
+          }
+        },
+        {
+          "name": "update my profile",
+          "request": {
+            "method": "PATCH",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Receiver Updated\",\n  \"gender\": \"female\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/user/me"
+          }
+        },
+        {
+          "name": "public profile and related messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/{{receiverId}}"
+          }
+        },
+        {
+          "name": "soft-delete my profile",
+          "request": {
+            "method": "DELETE",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/user/me"
+          }
+        }
+      ]
     },
     {
-      "name": "user",
-      "item": []
+      "name": "messages and identity requests",
+      "item": [
+        {
+          "name": "send anonymous message",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.data && body.data._id) pm.collectionVariables.set('messageId', body.data._id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"Hello anonymously!\",\n  \"visibility\": \"anonymous\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/to/{{receiverId}}"
+          }
+        },
+        {
+          "name": "send public message",
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"Hello publicly!\",\n  \"visibility\": \"public\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/to/{{receiverId}}"
+          }
+        },
+        {
+          "name": "get my inbox",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/inbox"
+          }
+        },
+        {
+          "name": "get message",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/{{messageId}}"
+          }
+        },
+        {
+          "name": "request sender identity",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.data && body.data._id) pm.collectionVariables.set('requestId', body.data._id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/{{messageId}}/identity-requests"
+          }
+        },
+        {
+          "name": "get identity requests I received as sender",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/identity-requests"
+          }
+        },
+        {
+          "name": "accept identity request and create conversation",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.data && body.data.conversation) pm.collectionVariables.set('conversationId', body.data.conversation._id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"status\": \"accepted\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/identity-requests/{{requestId}}"
+          }
+        },
+        {
+          "name": "reject identity request",
+          "request": {
+            "method": "PATCH",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"status\": \"rejected\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/identity-requests/{{requestId}}"
+          }
+        },
+        {
+          "name": "soft-delete received message",
+          "request": {
+            "method": "DELETE",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/{{messageId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "conversations",
+      "item": [
+        {
+          "name": "get my conversations",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/conversations"
+          }
+        },
+        {
+          "name": "send conversation message",
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"Thanks for accepting my request.\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/conversations/{{conversationId}}/messages"
+          }
+        },
+        {
+          "name": "get conversation messages as sender",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{senderToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/conversations/{{conversationId}}/messages?limit=100"
+          }
+        },
+        {
+          "name": "get conversation messages as receiver",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "url": "{{baseUrl}}/message/conversations/{{conversationId}}/messages?limit=100"
+          }
+        },
+        {
+          "name": "send conversation reply as receiver",
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{receiverToken}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"content\": \"Thanks, happy to chat!\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": "{{baseUrl}}/message/conversations/{{conversationId}}/messages"
+          }
+        }
+      ]
     }
   ]
 }

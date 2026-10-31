@@ -17,6 +17,13 @@ const messageSchema = new Schema(
         sender:{
             type: Schema.Types.ObjectId,
             ref: 'User',
+            required: true
+        },
+        visibility: {
+            type: String,
+            enum: ['anonymous', 'public'],
+            default: 'anonymous',
+            required: true
         },
         isDeleted: {
             type: Boolean,

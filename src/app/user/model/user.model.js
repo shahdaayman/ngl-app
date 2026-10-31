@@ -14,6 +14,7 @@ const userSchema = new Schema(
             required: function(){
                  return this.provider === 'local';
             },
+            select: false,
         },
         provider:{
             type: String,
@@ -27,6 +28,11 @@ const userSchema = new Schema(
         isVerified:{
             type: Boolean,
             default: false
+        },
+        authVersion: {
+            type: Number,
+            default: 0,
+            select: false
         },
         dob: Date,
         gender: {
